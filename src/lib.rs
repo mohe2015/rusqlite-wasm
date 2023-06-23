@@ -1,4 +1,6 @@
 use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
+use log::{Level, info};
+
 wasm_bindgen_test_configure!(run_in_browser);
 
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -9,6 +11,8 @@ struct Example {
 
 #[wasm_bindgen_test]
 fn test_rusqlite() {
+    console_log::init_with_level(Level::Debug);
+
     let conn = rusqlite::Connection::open_in_memory().unwrap();
 
     conn.execute(
@@ -37,5 +41,7 @@ fn test_rusqlite() {
             },
         )
         .unwrap();
+    info!("{:?}", res);
     assert_eq!(res, val);
+    panic!();
 }
