@@ -1,44 +1,41 @@
-use rusqlite::{Connection, Result, params};
+use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
+wasm_bindgen_test_configure!(run_in_browser);
 
-#[derive(Debug)]
-struct Person {
-    id: i32,
-    name: String,
-    data: Option<Vec<u8>>,
+#[derive(Debug, Eq, PartialEq, Clone)]
+struct Example {
+    pub id: i64,
+    pub name: String,
 }
 
-fn main() -> Result<()> {
-    let conn = Connection::open_in_memory()?;
+#[wasm_bindgen_test]
+fn test_rusqlite() {
+    let conn = rusqlite::Connection::open_in_memory().unwrap();
 
     conn.execute(
-        "CREATE TABLE person (
-            id    INTEGER PRIMARY KEY,
-            name  TEXT NOT NULL,
-            data  BLOB
-        )",
+        "CREATE TABLE example (id INT, name TEXT);",
         [], // empty list of parameters.
-    )?;
-    let me = Person {
-        id: 0,
-        name: "Steven".to_string(),
-        data: None,
+    ).unwrap();
+
+    let val = Example {
+        id: 1,
+        name: "test".into(),
     };
     conn.execute(
-        "INSERT INTO person (name, data) VALUES (?1, ?2)",
-        params![&me.name, &me.data],
-    )?;
-
-    let mut stmt = conn.prepare("SELECT id, name, data FROM person")?;
-    let person_iter = stmt.query_map([], |row| {
-        Ok(Person {
-            id: row.get(0)?,
-            name: row.get(1)?,
-            data: row.get(2)?,
-        })
-    })?;
-
-    for person in person_iter {
-        println!("Found person {:?}", person.unwrap());
-    }
-    Ok(())
+        "INSERT INTO example (id, name) VALUES (?, ?)",
+        (val.id, val.name.clone()),
+    )
+    .expect("Failed to set");
+    let res = conn
+        .query_row(
+            "SELECT id, name FROM example WHERE (id=?)",
+            [val.id],
+            |row| {
+                Ok(Example {
+                    id: row.get(0).unwrap(),
+                    name: row.get(1).unwrap(),
+                })
+            },
+        )
+        .unwrap();
+    assert_eq!(res, val);
 }

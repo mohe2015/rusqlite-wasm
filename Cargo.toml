@@ -10,3 +10,4 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 rusqlite = { path = "../rusqlite", features = ["bundled"] }
+wasm-bindgen-test = "0.3"
